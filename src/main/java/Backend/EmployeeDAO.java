@@ -9,9 +9,11 @@ package Backend;
  * @author Manula
  */
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,6 +43,28 @@ public class EmployeeDAO {
             e.printStackTrace();
             System.out.println("An error occurred while saving employee.");
         }
+    }
+
+    // Method to retrieve all employees
+    public List<Employee> getAllEmployees() throws ParseException {
+        List<Employee> employees = new ArrayList<>();
+        String sql = "SELECT first_name, last_name, email, role, start_date, status FROM employee";
+        try (Connection conn = DatabaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql); ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                String firstName = rs.getString("first_name");
+                String lastName = rs.getString("last_name");
+                String email = rs.getString("email");
+                String role = rs.getString("role");
+                Date startDate = rs.getDate("start_date");
+                String status = rs.getString("status");
+
+                Employee employee = new Employee(firstName, lastName, email, role, startDate, status);
+                employees.add(employee);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return employees;
     }
 
     // Other methods for updating, deleting, and retrieving individual employee records could be added here

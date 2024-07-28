@@ -140,7 +140,7 @@ public class Dashboard extends javax.swing.JFrame {
     private void btn_invActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_invActionPerformed
         // TODO add your handling code here:
         //Inventory Load
-        Employee emp = new Employee();
+        EmployeeGUI emp = new EmployeeGUI();
         jpload.jPanelLoader(panel_loader, emp);
     }//GEN-LAST:event_btn_invActionPerformed
 

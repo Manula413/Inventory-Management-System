@@ -12,6 +12,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 import javax.swing.JOptionPane;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  *
@@ -33,5 +35,8 @@ public class EmployeeManager {
         employeeDAO.saveEmployee(employee);
     }
 
+    public List<Employee> getAllEmployees() throws ParseException {
+        return employeeDAO.getAllEmployees();
+    }
     // Other methods for employee management can be added here
 }

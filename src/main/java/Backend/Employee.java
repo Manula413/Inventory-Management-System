@@ -25,11 +25,13 @@ public class Employee {
     private Date dateOfBirth;
     private Date startDate;
     private boolean isActive;
+    private String status;
 
     // Constructors, getters, and setters
     public Employee() {
     }
 
+    // Constructor for saving an employee
     public Employee(String firstName, String lastName, String email, String role, String password, String address, String dateOfBirth, String startDate, boolean isActive) throws ParseException {
         // Initialize the fields with the provided values
         this.firstName = firstName;
@@ -41,6 +43,16 @@ public class Employee {
         this.dateOfBirth = parseDate(dateOfBirth);
         this.startDate = parseDate(startDate);
         this.isActive = isActive;
+    }
+
+    // Constructor for retrieving an employee
+    public Employee(String firstName, String lastName, String email, String role, Date startDate, String status) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.role = role;
+        this.startDate = startDate;
+        this.status = status;
     }
 
     // Getters and setters
@@ -98,6 +110,14 @@ public class Employee {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setAStatus(String status) {
+        this.status = status;
     }
 
     public Date getDateOfBirth() {

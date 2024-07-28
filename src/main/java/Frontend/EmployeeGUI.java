@@ -5,23 +5,47 @@
 package Frontend;
 
 import Backend.EmployeeManager;
-import java.text.ParseException;
+import Backend.Employee;
+import java.awt.Color;
+import java.awt.Component;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.ButtonGroup;
+import javax.swing.*;
+import javax.swing.border.Border;
+import java.text.ParseException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 
 /**
  *
  * @author Manula
  */
-public class Employee extends javax.swing.JPanel {
+public class EmployeeGUI extends javax.swing.JPanel {
 
     private EmployeeManager employeeManager = new EmployeeManager();
     private ButtonGroup statusGroup = new ButtonGroup();
+    private Border defaultBorder;
+    private Border redBorder = BorderFactory.createLineBorder(Color.RED, 1);
 
-    public Employee() {
+    public EmployeeGUI() {
         initComponents();
         initializeButtonGroup();
+        displayEmployees();
+        defaultBorder = tfFirstName.getBorder();
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        dpDateOfBirth.setText(today.format(formatter));
+        dpDateOfBirth.setForeground(Color.BLACK); // Set text color to black
+
+        dpStartDate.setText(today.format(formatter));
+        dpStartDate.setForeground(Color.BLACK); // Set text color to black
 
     }
 
@@ -32,16 +56,125 @@ public class Employee extends javax.swing.JPanel {
 
     private void clearForm() {
         tfFirstName.setText("");
+        tfFirstName.setBorder(defaultBorder);
+
         tfLastName.setText("");
+        tfLastName.setBorder(defaultBorder);
+
         tfEmail.setText("");
+        tfEmail.setBorder(defaultBorder);
+
         cbRole.setSelectedIndex(0); // Reset role dropdown to default
+
         pfPassword.setText("");
+        pfPassword.setBorder(defaultBorder);
+
         pfConfirmPassword.setText("");
+        pfConfirmPassword.setBorder(defaultBorder);
+
         tfAddress.setText("");
-        dpDateOfBirth.clear();
-        dpStartDate.clear();
+        tfAddress.setBorder(defaultBorder);
+
         rbStatusActive.setSelected(false);
+
         rbStatusInactive.setSelected(false);
+    }
+
+    private void displayEmployees() {
+        try {
+            List<Employee> employees = employeeManager.getAllEmployees();
+            DefaultTableModel model = createTableModel(employees);
+            tblViewEmployees.setModel(model);
+            SwingUtilities.invokeLater(() -> {
+                fillEmptyRows(model);
+                setCustomRenderer();
+                setUpSorting(model);
+            });
+        } catch (ParseException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error parsing employee data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private DefaultTableModel createTableModel(List<Employee> employees) {
+        String[] columnNames = {"Name", "Email", "Role", "Start Date", "Status"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0);
+
+        for (Employee employee : employees) {
+            String name = employee.getFirstName() + " " + employee.getLastName();
+            String email = employee.getEmail();
+            String role = employee.getRole();
+            String startDate = employee.getStartDate().toString();
+            String status = employee.getStatus();
+            Object[] row = {name, email, role, startDate, status};
+            model.addRow(row);
+        }
+
+        return model;
+    }
+
+    private void fillEmptyRows(DefaultTableModel model) {
+        JScrollPane scrollPane = (JScrollPane) tblViewEmployees.getParent().getParent();
+        int tableHeight = scrollPane.getViewport().getHeight();
+        int rowHeight = tblViewEmployees.getRowHeight();
+        int visibleRowCount = tableHeight / rowHeight;
+        int currentRowCount = model.getRowCount();
+        int rowsToAdd = visibleRowCount - currentRowCount;
+
+        if (rowsToAdd > 0) {
+            for (int i = 0; i < rowsToAdd; i++) {
+                model.addRow(new Object[model.getColumnCount()]);
+            }
+        }
+    }
+
+    private void setCustomRenderer() {
+        DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                setBackground(Color.WHITE);
+                return this;
+            }
+        };
+
+        for (int i = 0; i < tblViewEmployees.getColumnCount(); i++) {
+            tblViewEmployees.getColumnModel().getColumn(i).setCellRenderer(renderer);
+        }
+    }
+
+    private void setUpSorting(DefaultTableModel model) {
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
+
+        sorter.setRowFilter(new RowFilter<DefaultTableModel, Integer>() {
+            @Override
+            public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+                for (int i = 0; i < entry.getValueCount(); i++) {
+                    if (entry.getStringValue(i) != null && !entry.getStringValue(i).trim().isEmpty()) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
+
+        Comparator<String> roleComparator = (s1, s2) -> {
+            if (s1 == null || s1.trim().isEmpty()) {
+                return 1;
+            }
+            if (s2 == null || s2.trim().isEmpty()) {
+                return -1;
+            }
+
+            List<String> rolePriority = Arrays.asList("Admin", "Manager", "Cashier");
+            int index1 = rolePriority.indexOf(s1);
+            int index2 = rolePriority.indexOf(s2);
+
+            return Integer.compare(index1, index2);
+        };
+
+        sorter.setComparator(2, roleComparator);
+        tblViewEmployees.setRowSorter(sorter);
     }
 
     /**
@@ -57,7 +190,7 @@ public class Employee extends javax.swing.JPanel {
         jTabbedPane1 = new javax.swing.JTabbedPane();
         jPanel2 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new javax.swing.JTable();
+        tblViewEmployees = new javax.swing.JTable();
         jPanel3 = new javax.swing.JPanel();
         lblFirstName = new javax.swing.JLabel();
         lblLastName = new javax.swing.JLabel();
@@ -90,65 +223,77 @@ public class Employee extends javax.swing.JPanel {
         jPanel2.setBackground(new java.awt.Color(255, 255, 255));
         jPanel2.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
 
-        jTable1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+        tblViewEmployees.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        tblViewEmployees.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null}
             },
             new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
+                "Name", "Email", "Role", "Start Date", "Status"
             }
-        ));
-        jScrollPane1.setViewportView(jTable1);
+        ) {
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false
+            };
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
+        tblViewEmployees.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        tblViewEmployees.setGridColor(new java.awt.Color(255, 255, 255));
+        tblViewEmployees.setRowHeight(25);
+        tblViewEmployees.setRowSelectionAllowed(false);
+        jScrollPane1.setViewportView(tblViewEmployees);
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -161,7 +306,7 @@ public class Employee extends javax.swing.JPanel {
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 569, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 545, Short.MAX_VALUE)
         );
 
         jTabbedPane1.addTab("View Employees", jPanel2);
@@ -169,92 +314,73 @@ public class Employee extends javax.swing.JPanel {
         jPanel3.setBackground(new java.awt.Color(255, 255, 255));
         jPanel3.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
 
-        lblFirstName.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         lblFirstName.setText("First Name :");
+        lblFirstName.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
 
-        lblLastName.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         lblLastName.setText("Last Name :");
+        lblLastName.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
 
-        lblEmail.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         lblEmail.setText("Email :");
+        lblEmail.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
 
-        lblRole.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         lblRole.setText("Role :");
+        lblRole.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
 
-        lblPassword.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         lblPassword.setText("Password :");
+        lblPassword.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
 
-        lblConfirmPassword.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         lblConfirmPassword.setText("Confirm Password :");
+        lblConfirmPassword.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
 
-        lblAddress.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         lblAddress.setText("Address :");
+        lblAddress.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
 
-        lblDateOfBirth.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         lblDateOfBirth.setText("Date Of Birth :");
+        lblDateOfBirth.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
 
-        lblStartDate.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         lblStartDate.setText("Start Date :");
+        lblStartDate.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
 
-        lblStart.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         lblStart.setText("Status : ");
+        lblStart.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
 
         tfFirstName.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         tfFirstName.setText(" ");
-        tfFirstName.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                tfFirstNameActionPerformed(evt);
-            }
-        });
 
         tfLastName.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         tfLastName.setText(" ");
-        tfLastName.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                tfLastNameActionPerformed(evt);
-            }
-        });
 
         tfEmail.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         tfEmail.setText(" ");
-        tfEmail.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                tfEmailActionPerformed(evt);
-            }
-        });
 
-        dpDateOfBirth.setText("June 8, 2024");
+        dpDateOfBirth.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
 
         dpStartDate.setText("June 8, 2024");
+        dpStartDate.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
 
-        rbStatusActive.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         rbStatusActive.setText("Active");
+        rbStatusActive.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
 
-        rbStatusInactive.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         rbStatusInactive.setText("Inactive");
+        rbStatusInactive.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
 
         tfAddress.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
         tfAddress.setText(" ");
-        tfAddress.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                tfAddressActionPerformed(evt);
-            }
-        });
 
+        btncsave.setText("Save");
         btncsave.setBackground(new java.awt.Color(51, 51, 51));
         btncsave.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         btncsave.setForeground(new java.awt.Color(255, 255, 255));
-        btncsave.setText("Save");
         btncsave.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btncsaveActionPerformed(evt);
             }
         });
 
+        btnclear.setText("Clear");
         btnclear.setBackground(new java.awt.Color(51, 51, 51));
         btnclear.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         btnclear.setForeground(new java.awt.Color(255, 255, 255));
-        btnclear.setText("Clear");
         btnclear.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnclearActionPerformed(evt);
@@ -265,8 +391,8 @@ public class Employee extends javax.swing.JPanel {
 
         pfConfirmPassword.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
 
+        cbRole.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Cashier", "Manager", "Admin" }));
         cbRole.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
-        cbRole.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Cashier", "Manager", "Admin", " " }));
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -364,7 +490,7 @@ public class Employee extends javax.swing.JPanel {
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(lblConfirmPassword)
                     .addComponent(pfConfirmPassword, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 67, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 43, Short.MAX_VALUE)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btncsave, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnclear, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -384,26 +510,10 @@ public class Employee extends javax.swing.JPanel {
             .addComponent(jTabbedPane1)
         );
     }// </editor-fold>//GEN-END:initComponents
-
-    private void tfFirstNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tfFirstNameActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_tfFirstNameActionPerformed
-
-    private void tfLastNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tfLastNameActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_tfLastNameActionPerformed
-
-    private void tfEmailActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tfEmailActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_tfEmailActionPerformed
-
-    private void tfAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tfAddressActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_tfAddressActionPerformed
+    private static final Logger LOG = Logger.getLogger(Employee.class.getName());
 
     private void btncsaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btncsaveActionPerformed
-        // TODO add your handling code here:
-// Get the input values from the form fields
+
         String firstName = tfFirstName.getText().trim();
         String lastName = tfLastName.getText().trim();
         String email = tfEmail.getText().trim();
@@ -415,28 +525,69 @@ public class Employee extends javax.swing.JPanel {
         String startDate = dpStartDate.getText();
         boolean isActive = rbStatusActive.isSelected();
 
-        // Validate the form inputs
-        if (password.equals(confirmPassword)) {
+        boolean valid = true;
+
+        if (firstName.isEmpty() || !firstName.matches("[a-zA-Z\\s]+")) {
+            tfFirstName.setBorder(redBorder);
+            valid = false;
+        } else {
+            tfFirstName.setBorder(defaultBorder);
+        }
+
+        if (lastName.isEmpty() || !lastName.matches("[a-zA-Z\\s]+")) {
+            tfLastName.setBorder(redBorder);
+            valid = false;
+        } else {
+            tfLastName.setBorder(defaultBorder);
+        }
+
+        if (email.isEmpty() || !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            tfEmail.setBorder(redBorder);
+            valid = false;
+        } else {
+            tfEmail.setBorder(defaultBorder);
+        }
+
+        if (password.isEmpty() || password.length() < 8 || !password.matches(".*[A-Z].*") || !password.matches(".*[a-z].*") || !password.matches(".*[0-9].*") || !password.matches(".*[!@#\\$%\\^&\\*].*")) {
+            pfPassword.setBorder(redBorder);
+            valid = false;
+        } else {
+            pfPassword.setBorder(defaultBorder);
+        }
+
+        if (confirmPassword.isEmpty() || !password.equals(confirmPassword)) {
+            pfConfirmPassword.setBorder(redBorder);
+            valid = false;
+        } else {
+            pfConfirmPassword.setBorder(defaultBorder);
+        }
+
+        if (address.isEmpty()) {
+            tfAddress.setBorder(redBorder);
+            valid = false;
+        } else {
+            tfAddress.setBorder(defaultBorder);
+        }
+
+        if (valid) {
             // Create an instance of EmployeeManager
             EmployeeManager employeeManager = new EmployeeManager();
 
             try {
                 // Save the employee using the employeeManager
                 employeeManager.saveEmployee(firstName, lastName, email, role, password, address, dateOfBirth, startDate, isActive);
+                // Clear the form or display success message
             } catch (ParseException ex) {
                 Logger.getLogger(Employee.class.getName()).log(Level.SEVERE, null, ex);
             }
-
-            // Clear the form
-            clearForm();
-        } else {
-            System.out.println("Passwords do not match.");
         }
+
 
     }//GEN-LAST:event_btncsaveActionPerformed
 
     private void btnclearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnclearActionPerformed
         // TODO add your handling code here:
+        clearForm();
     }//GEN-LAST:event_btnclearActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -450,7 +601,6 @@ public class Employee extends javax.swing.JPanel {
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTabbedPane jTabbedPane1;
-    private javax.swing.JTable jTable1;
     private javax.swing.JLabel lblAddress;
     private javax.swing.JLabel lblConfirmPassword;
     private javax.swing.JLabel lblDateOfBirth;
@@ -465,6 +615,7 @@ public class Employee extends javax.swing.JPanel {
     private javax.swing.JPasswordField pfPassword;
     private javax.swing.JRadioButton rbStatusActive;
     private javax.swing.JRadioButton rbStatusInactive;
+    private javax.swing.JTable tblViewEmployees;
     private javax.swing.JTextField tfAddress;
     private javax.swing.JTextField tfEmail;
     private javax.swing.JTextField tfFirstName;
