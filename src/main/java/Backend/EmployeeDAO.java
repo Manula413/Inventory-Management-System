@@ -22,7 +22,7 @@ public class EmployeeDAO {
     // Method to save an employee record to the database
     public void saveEmployee(Employee employee) {
         String sql = "INSERT INTO employee (first_name, last_name, email, role, password, address, dob, start_date, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DatabaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = DatabaseConnector.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, employee.getFirstName());
             pstmt.setString(2, employee.getLastName());
             pstmt.setString(3, employee.getEmail());
@@ -49,7 +49,7 @@ public class EmployeeDAO {
     public List<Employee> getAllEmployees() throws ParseException {
         List<Employee> employees = new ArrayList<>();
         String sql = "SELECT first_name, last_name, email, role, start_date, status FROM employee";
-        try (Connection conn = DatabaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql); ResultSet rs = pstmt.executeQuery()) {
+        try (Connection conn = DatabaseConnector.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql); ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
                 String firstName = rs.getString("first_name");
                 String lastName = rs.getString("last_name");
@@ -66,6 +66,4 @@ public class EmployeeDAO {
         }
         return employees;
     }
-
-    // Other methods for updating, deleting, and retrieving individual employee records could be added here
 }

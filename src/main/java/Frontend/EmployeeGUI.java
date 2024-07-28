@@ -570,18 +570,17 @@ public class EmployeeGUI extends javax.swing.JPanel {
         }
 
         if (valid) {
-            // Create an instance of EmployeeManager
             EmployeeManager employeeManager = new EmployeeManager();
 
             try {
-                // Save the employee using the employeeManager
                 employeeManager.saveEmployee(firstName, lastName, email, role, password, address, dateOfBirth, startDate, isActive);
                 // Clear the form or display success message
             } catch (ParseException ex) {
                 Logger.getLogger(Employee.class.getName()).log(Level.SEVERE, null, ex);
+                JOptionPane.showMessageDialog(this, "An error occurred while saving employee.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
-
+        clearForm();
 
     }//GEN-LAST:event_btncsaveActionPerformed
 
